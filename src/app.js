@@ -1,0 +1,50 @@
+// =====================================================================
+// Configuración de la aplicación Express.
+// Aquí se registran los middlewares, las rutas y el manejo de errores.
+// =====================================================================
+const express = require('express');
+const viajesRoutes = require('./routes/viajes.routes');
+
+const app = express();
+
+// Middleware de registro (logger): muestra en la terminal cada petición que llega,
+// con la hora, el método, la URI, el código de respuesta, cuánto tardó y quién la hizo.
+app.use((req, res, next) => {
+  const inicio = Date.now();
+  // 'finish' ocurre cuando la respuesta ya se envió (ahí ya se conoce el código de estado)
+  res.on('finish', () => {
+    const ms = Date.now() - inicio;
+    const origen = (req.headers['user-agent'] || 'desconocido').split(' ')[0];
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms} ms) · ${origen}`);
+  });
+  next(); // deja seguir la petición hacia las rutas
+});
+
+// Middleware: convierte el cuerpo JSON de la petición en un objeto (req.body)
+app.use(express.json());
+
+// Endpoint de salud: permite verificar que el microservicio está vivo
+app.get('/health', (req, res) => {
+  res.json({ servicio: 'ms-viajes', estado: 'ok' });
+});
+
+// Rutas del recurso. Todas las URIs de este microservicio empiezan por /viajes
+app.use('/viajes', viajesRoutes);
+
+// Cualquier otra ruta: 404 Not Found
+app.use((req, res) => {
+  res.status(404).json({ error: `Ruta no encontrada: ${req.method} ${req.originalUrl}` });
+});
+
+// Manejo centralizado de errores (los lanza la capa de servicio)
+app.use((err, req, res, next) => {
+  // JSON mal formado en el cuerpo de la petición
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'El cuerpo de la petición no es un JSON válido' });
+  }
+  const status = err.status || 500;
+  if (status === 500) console.error(err);
+  res.status(status).json({ error: err.message, detalles: err.detalles });
+});
+
+module.exports = app;
