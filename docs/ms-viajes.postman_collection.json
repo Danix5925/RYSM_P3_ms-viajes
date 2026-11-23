@@ -1,0 +1,1099 @@
+{
+  "info": {
+    "name": "ms-viajes",
+    "description": "Pruebas de ms-viajes (Evaluación Módulo 3). Requiere ms-usuarios (3001) y ms-viajes (3011) corriendo con la misma JWT_SECRET. Las claves de prueba de admin_password y comercial_password están en las Variables de la colección. Ejecutar las carpetas en orden: primero 0 · Preparar tokens. La colección se puede repetir sin limpiar la base: el caso 7 crea un viaje con código nuevo y el caso 15 lo borra. Los casos 2, 4 y 13 usan los datos iniciales de db/schema.sql (destino Cartagena, id 1 y código VJ-001). A través del host virtual del examen, cambie baseUrl y usuariosUrl a http://<host>/api.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0 · Preparar tokens",
+      "item": [
+        {
+          "name": "Paso 1 - Login administrador (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('token', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{usuariosUrl}}/usuarios/login",
+              "host": [
+                "{{usuariosUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Paso 2 - Crear usuario comercial (201, o 409 si ya existe)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 201 o 409', function () { pm.expect([201, 409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{usuariosUrl}}/usuarios",
+              "host": [
+                "{{usuariosUrl}}"
+              ],
+              "path": [
+                "usuarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Comercial\",\n  \"email\": \"{{comercial_email}}\",\n  \"password\": \"{{comercial_password}}\",\n  \"rol\": \"comercial\",\n  \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Paso 3 - Login comercial (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });",
+                  "pm.collectionVariables.set('token_comercial', pm.response.json().token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{usuariosUrl}}/usuarios/login",
+              "host": [
+                "{{usuariosUrl}}"
+              ],
+              "path": [
+                "usuarios",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{comercial_email}}\",\n  \"password\": \"{{comercial_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Login de administrador, crea el usuario comercial (409 si ya existe) y guarda token y token_comercial."
+    },
+    {
+      "name": "1 · CRUD (casos 1 a 16)",
+      "item": [
+        {
+          "name": "Extra - Health, público (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 1 - Listar todos (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Devuelve una lista', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 2 - Filtrar por destino (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Todos van a Cartagena', function () { const l = pm.response.json(); pm.expect(l.length).to.be.above(0); l.forEach(function (v) { pm.expect(v.destino.toLowerCase()).to.eql('cartagena'); }); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes?destino=Cartagena",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ],
+              "query": [
+                {
+                  "key": "destino",
+                  "value": "Cartagena"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 3 - Filtrar por destino sin coincidencias (200, lista vacía)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Lista vacía', function () { pm.expect(pm.response.json().length).to.eql(0); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes?destino=Marte",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ],
+              "query": [
+                {
+                  "key": "destino",
+                  "value": "Marte"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 4 - Obtener existente (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Trae los campos', function () { const v = pm.response.json(); pm.expect(v).to.have.all.keys('id', 'codigo', 'origen', 'destino', 'fecha', 'pasajeros'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 5 - Obtener id inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/9999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "9999"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 6 - Obtener id no numérico (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "abc"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 7 - Crear con datos válidos (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('codigo_nuevo', 'T-' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Devuelve el viaje creado', function () { const v = pm.response.json(); pm.expect(v.id).to.be.a('number'); pm.expect(v.codigo).to.eql(pm.collectionVariables.get('codigo_nuevo')); });",
+                  "pm.collectionVariables.set('nuevo_id', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigo_nuevo}}\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 8 - Crear sin atributo obligatorio: falta pasajeros (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"SIN-PAS\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 9 - Crear con pasajeros 0 (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"PAS-CERO\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 10 - Crear con fecha inválida (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 400', function () { pm.response.to.have.status(400); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"FECHA-MAL\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-02-30\",\n  \"pasajeros\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 11 - Crear con código repetido: el del caso 7 (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigo_nuevo}}\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 12 - Actualizar existente: el creado en el caso 7 (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Pasajeros actualizado', function () { pm.expect(pm.response.json().pasajeros).to.eql(5); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/{{nuevo_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "{{nuevo_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigo_nuevo}}\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 13 - Actualizar con el código de otro viaje: VJ-001 (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 409', function () { pm.response.to.have.status(409); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/{{nuevo_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "{{nuevo_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"VJ-001\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 14 - Actualizar id inexistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/9999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "9999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigo_nuevo}}\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 15 - Eliminar existente: el creado en el caso 7 (204)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/{{nuevo_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "{{nuevo_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 16 - Eliminar el mismo otra vez (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 404', function () { pm.response.to.have.status(404); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/{{nuevo_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "{{nuevo_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Con token de administrador."
+    },
+    {
+      "name": "2 · Seguridad (casos 17 a 22)",
+      "item": [
+        {
+          "name": "Caso 17 - GET sin token (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 18 - GET con token inventado (401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_inventado}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 19 - GET con rol que solo consulta: comercial (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 200', function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_comercial}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 20 - POST con rol sin permiso: comercial (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_comercial}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigo_nuevo}}\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 21 - PUT con rol sin permiso: comercial (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_comercial}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"{{codigo_nuevo}}\",\n  \"origen\": \"Cali\",\n  \"destino\": \"Pasto\",\n  \"fecha\": \"2026-12-28\",\n  \"pasajeros\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Caso 22 - DELETE con rol sin permiso: comercial (403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Código 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/viajes/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "viajes",
+                "1"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_comercial}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Sin token, token inventado y token de comercial (GET sí, POST/PUT/DELETE no)."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3011"
+    },
+    {
+      "key": "usuariosUrl",
+      "value": "http://127.0.0.1:3001"
+    },
+    {
+      "key": "admin_email",
+      "value": "admin@empresa.com"
+    },
+    {
+      "key": "admin_password",
+      "value": "Admin2026*"
+    },
+    {
+      "key": "comercial_email",
+      "value": "comercial@empresa.com"
+    },
+    {
+      "key": "comercial_password",
+      "value": "Comercial2026"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "token_comercial",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "token_inventado",
+      "value": "eyJhbGciOiJIUzI1NiJ9.eyJyb2wiOiJhZG1pbmlzdHJhZG9yIn0.firma-inventada"
+    },
+    {
+      "key": "codigo_nuevo",
+      "value": ""
+    },
+    {
+      "key": "nuevo_id",
+      "value": ""
+    }
+  ]
+}
