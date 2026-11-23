@@ -134,6 +134,32 @@ Cada petición se muestra en la terminal con la hora, el método, la ruta, el c�
 La colección de Postman está en `docs/ms-viajes.postman_collection.json` (32 pruebas: login, CRUD, 409, filtro, 401 y 403).
 Se ejecuta con ms-usuarios (3001) y ms-viajes (3011) corriendo con el mismo `JWT_SECRET`. Ejecutar primero la carpeta `0 · Preparar tokens`.
 
+## Despliegue en servidor2
+
+1. Base de datos en servidor1, con el usuario restringido a la IP de servidor2:
+
+```sql
+CREATE DATABASE viajes_db;
+CREATE USER 'viajes_user'@'<IP de servidor2>' IDENTIFIED BY '<clave>';
+GRANT ALL PRIVILEGES ON viajes_db.* TO 'viajes_user'@'<IP de servidor2>';
+FLUSH PRIVILEGES;
+```
+
+Luego se carga `db/schema.sql` desde servidor2 con `mysql -h <IP de servidor1> -u viajes_user -p < db/schema.sql`.
+
+2. Código en servidor2: clonar el repositorio en `/srv/examen/ms-viajes`, ejecutar `npm ci --omit=dev` y crear el `.env` con `DB_HOST` apuntando a servidor1 y la misma `JWT_SECRET` del ms-usuarios de servidor2. Permisos del `.env`: `chmod 640` y grupo `nodeapps`.
+
+3. Servicio: copiar `deploy/ms-viajes.service` a `/etc/systemd/system/` y ejecutar `systemctl daemon-reload` y `systemctl enable --now ms-viajes`.
+
+4. Gateway Apache, dentro del host virtual del examen:
+
+```
+ProxyPass        /api/viajes http://127.0.0.1:3011/viajes
+ProxyPassReverse /api/viajes http://127.0.0.1:3011/viajes
+```
+
+5. Pruebas: en la colección de Postman cambiar `baseUrl` y `usuariosUrl` a `http://<host del examen>/api`.
+
 ## Estructura
 
 ```
