@@ -7,6 +7,8 @@ const repository = require('../repositories/viajes.repository');
 const rutas = require('../clients/rutas.client');
 const { validarViaje } = require('../models/viaje');
 
+const AVISO = 'El servicio de rutas no está disponible; la ruta no se pudo consultar';
+
 // El id de la URL debe ser un entero positivo (si no, 400)
 function validarId(id) {
   const numero = Number(id);
@@ -15,7 +17,6 @@ function validarId(id) {
   }
   return numero;
 }
-
 
 
 function mismaCiudad(a, b) {
@@ -40,27 +41,50 @@ async function validarRelacion(viaje, token) {
   return ruta;
 }
 
+
+function resumenRuta(ruta) {
+  return { id: ruta.id, nombre_ruta: ruta.nombre_ruta };
+}
+
+
+async function componer(viajes, token) {
+  if (viajes.length === 0) return [];
+  const ids = [...new Set(viajes.map((v) => v.ruta_id))];
+  const lista = await rutas.obtenerPorIds(ids, token);
+  if (!lista) {
+    return viajes.map((v) => ({ ...v, ruta: null, aviso: AVISO }));
+  }
+  const porId = new Map(lista.map((r) => [r.id, r]));
+  return viajes.map((v) => {
+    const ruta = porId.get(v.ruta_id);
+    return { ...v, ruta: ruta ? resumenRuta(ruta) : null };
+  });
+}
+
 // GET /viajes y GET /viajes?destino=
 async function listar(destino, token) {
-  return repository.listar(destino);
+  const viajes = await repository.listar(destino);
+  return componer(viajes, token);
 }
 
 // GET /viajes/:id  (404 si no existe)
 async function obtener(id, token) {
   const viaje = await repository.buscarPorId(validarId(id));
   if (!viaje) throw new HttpError(404, `No existe el viaje con id ${id}`);
-  return viaje;
+  const [compuesto] = await componer([viaje], token);
+  return compuesto;
 }
 
 // POST /viajes  (400 datos o ruta inválidos, 409 código repetido, 503 proveedor caído)
 async function crear(datos, token) {
   const viaje = validarViaje(datos);
-  await validarRelacion(viaje, token);
+  const ruta = await validarRelacion(viaje, token);
   if (await repository.buscarPorCodigo(viaje.codigo)) {
     throw new HttpError(409, `Ya existe un viaje con el código ${viaje.codigo}`);
   }
   const id = await repository.crear(viaje);
-  return repository.buscarPorId(id);
+  const creado = await repository.buscarPorId(id);
+  return { ...creado, ruta: resumenRuta(ruta) };
 }
 
 // PUT /viajes/:id  (404 no existe, 400 datos o ruta inválidos, 409 código de otro viaje, 503)
@@ -70,13 +94,14 @@ async function actualizar(id, datos, token) {
     throw new HttpError(404, `No existe el viaje con id ${id}`);
   }
   const viaje = validarViaje(datos);
-  await validarRelacion(viaje, token);
+  const ruta = await validarRelacion(viaje, token);
   const conMismoCodigo = await repository.buscarPorCodigo(viaje.codigo);
   if (conMismoCodigo && conMismoCodigo.id !== idNumero) {
     throw new HttpError(409, `Ya existe un viaje con el código ${viaje.codigo}`);
   }
   await repository.actualizar(idNumero, viaje);
-  return repository.buscarPorId(idNumero);
+  const actualizado = await repository.buscarPorId(idNumero);
+  return { ...actualizado, ruta: resumenRuta(ruta) };
 }
 
 // DELETE /viajes/:id  (404 si no existe)
