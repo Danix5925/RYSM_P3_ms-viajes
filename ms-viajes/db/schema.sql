@@ -2,6 +2,7 @@
 -- Base de datos de ms-viajes
 -- Se puede ejecutar varias veces: borra y recrea la tabla con 3 registros.
 -- =====================================================================
+SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS viajes_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE viajes_db;
 
@@ -13,10 +14,11 @@ CREATE TABLE viajes (
   origen    VARCHAR(80) NOT NULL,
   destino   VARCHAR(80) NOT NULL,
   fecha     DATE NOT NULL,
-  pasajeros INT NOT NULL
+  pasajeros INT NOT NULL,
+  ruta_id   INT NOT NULL                  -- id de la ruta en ms-rutas (el proveedor)
 );
 
-INSERT INTO viajes (codigo, origen, destino, fecha, pasajeros) VALUES
-  ('VJ-001', 'Cali',     'Bogota',    '2026-12-05', 3),
-  ('VJ-002', 'Medellin', 'Cartagena', '2026-12-12', 2),
-  ('VJ-003', 'Cali',     'Cartagena', '2026-12-20', 4);
+INSERT INTO viajes (codigo, origen, destino, fecha, pasajeros, ruta_id) VALUES
+  ('VJ-001', 'Cali', 'Buga',    '2026-12-05', 3, 1),
+  ('VJ-002', 'Cali', 'Palmira', '2026-12-12', 2, 2),
+  ('VJ-003', 'Buga', 'Tuluá',   '2026-12-20', 4, 3);

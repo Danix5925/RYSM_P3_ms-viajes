@@ -1,6 +1,7 @@
 // =====================================================================
 // Modelo de viaje: define los campos y valida los datos que llegan.
 // Campos: codigo, origen, destino, fecha (AAAA-MM-DD), pasajeros (entero > 0)
+// y ruta_id (entero > 0, referencia a una ruta del proveedor).
 // Si algo está mal lanza un HttpError 400 con la lista de problemas.
 // =====================================================================
 const HttpError = require('../utils/http-error');
@@ -36,6 +37,9 @@ function validarViaje(datos) {
   if (!Number.isInteger(d.pasajeros) || d.pasajeros <= 0) {
     errores.push('pasajeros es obligatorio y debe ser un entero mayor que 0');
   }
+  if (!Number.isInteger(d.ruta_id) || d.ruta_id <= 0) {
+    errores.push('ruta_id es obligatorio y debe ser un entero mayor que 0');
+  }
 
   if (errores.length > 0) {
     throw new HttpError(400, 'Datos inválidos', errores);
@@ -47,6 +51,7 @@ function validarViaje(datos) {
     destino: d.destino.trim(),
     fecha: d.fecha,
     pasajeros: d.pasajeros,
+    ruta_id: d.ruta_id,
   };
 }
 

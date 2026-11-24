@@ -62,6 +62,7 @@ Para desarrollo (reinicia al cambiar un archivo): `npm run dev`. El servicio esc
 | destino | texto | Obligatorio, máximo 80 caracteres |
 | fecha | fecha | Obligatoria, formato AAAA-MM-DD |
 | pasajeros | entero | Obligatorio, mayor que 0 |
+| ruta_id | entero | Obligatorio, mayor que 0; referencia a una ruta de ms-rutas |
 
 ## Seguridad
 
@@ -81,6 +82,7 @@ El token se obtiene con `POST /usuarios/login` en ms-usuarios.
 | POST | /viajes | administrador | 201 viaje creado | 400 · 401 · 403 · 409 |
 | PUT | /viajes/:id | administrador | 200 viaje actualizado | 400 · 401 · 403 · 404 · 409 |
 | DELETE | /viajes/:id | administrador | 204 sin cuerpo | 400 · 401 · 403 · 404 |
+POST y PUT reciben `ruta_id`, que debe existir en ms-rutas.
 
 Códigos de error:
 
@@ -102,7 +104,8 @@ Los errores responden `{ "error": "mensaje" }`. En los 400 por datos inválidos 
   "origen": "Cali",
   "destino": "Pasto",
   "fecha": "2026-12-28",
-  "pasajeros": 2
+  "pasajeros": 2,
+  "ruta_id": 1
 }
 ```
 

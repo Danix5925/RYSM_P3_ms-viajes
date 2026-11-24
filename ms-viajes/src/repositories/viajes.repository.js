@@ -27,16 +27,16 @@ async function buscarPorCodigo(codigo) {
 // Inserta y devuelve el id que generó MySQL
 async function crear(viaje) {
   const [resultado] = await pool.query(
-    'INSERT INTO viajes (codigo, origen, destino, fecha, pasajeros) VALUES (?, ?, ?, ?, ?)',
-    [viaje.codigo, viaje.origen, viaje.destino, viaje.fecha, viaje.pasajeros]
+    'INSERT INTO viajes (codigo, origen, destino, fecha, pasajeros, ruta_id) VALUES (?, ?, ?, ?, ?, ?)',
+    [viaje.codigo, viaje.origen, viaje.destino, viaje.fecha, viaje.pasajeros, viaje.ruta_id]
   );
   return resultado.insertId;
 }
 
 async function actualizar(id, viaje) {
   await pool.query(
-    'UPDATE viajes SET codigo = ?, origen = ?, destino = ?, fecha = ?, pasajeros = ? WHERE id = ?',
-    [viaje.codigo, viaje.origen, viaje.destino, viaje.fecha, viaje.pasajeros, id]
+    'UPDATE viajes SET codigo = ?, origen = ?, destino = ?, fecha = ?, pasajeros = ?, ruta_id = ? WHERE id = ?',
+    [viaje.codigo, viaje.origen, viaje.destino, viaje.fecha, viaje.pasajeros, viaje.ruta_id, id]
   );
 }
 
