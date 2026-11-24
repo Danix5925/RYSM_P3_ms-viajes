@@ -4,20 +4,25 @@
 // =====================================================================
 const service = require('../services/viajes.service');
 
+
+function tokenDe(req) {
+  return req.headers.authorization;
+}
+
 async function listar(req, res) {
-  res.json(await service.listar(req.query.destino));
+  res.json(await service.listar(req.query.destino, tokenDe(req)));
 }
 
 async function obtener(req, res) {
-  res.json(await service.obtener(req.params.id));
+  res.json(await service.obtener(req.params.id, tokenDe(req)));
 }
 
 async function crear(req, res) {
-  res.status(201).json(await service.crear(req.body));
+  res.status(201).json(await service.crear(req.body, tokenDe(req)));
 }
 
 async function actualizar(req, res) {
-  res.json(await service.actualizar(req.params.id, req.body));
+  res.json(await service.actualizar(req.params.id, req.body, tokenDe(req)));
 }
 
 async function eliminar(req, res) {
