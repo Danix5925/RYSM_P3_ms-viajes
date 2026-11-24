@@ -17,10 +17,25 @@ function validarId(id) {
 }
 
 
+
+function mismaCiudad(a, b) {
+  return String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+}
+
+
 async function validarRelacion(viaje, token) {
   const ruta = await rutas.obtenerPorId(viaje.ruta_id, token);
   if (!ruta) {
     throw new HttpError(400, `La ruta con id ${viaje.ruta_id} no existe`);
+  }
+  if (
+    !mismaCiudad(viaje.origen, ruta.ciudad_origen) ||
+    !mismaCiudad(viaje.destino, ruta.ciudad_destino)
+  ) {
+    throw new HttpError(
+      400,
+      `El origen y el destino del viaje no coinciden con la ruta (${ruta.ciudad_origen} - ${ruta.ciudad_destino})`
+    );
   }
   return ruta;
 }
